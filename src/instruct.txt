@@ -1,0 +1,184 @@
+Smart Hotel Management & Reservation System (SHMRS)
+1. Detailed Problem Statement
+Business Background
+
+A luxury hotel chain such as Taj, Marriott, Hyatt, or ITC operates multiple room categories and serves different customer types (regular and VIP customers).
+
+The hotel currently manages:
+
+Room inventory manually
+Customer registrations
+Booking confirmations
+Billing and payment transactions
+Service requests (Spa, Laundry, Restaurant)
+Employee operations
+Guest notifications
+File-based audit and backup systems
+
+The management wants a centralized Smart Hotel Management & Reservation System (SHMRS) built using Core Java.
+
+Business Objectives
+
+The system must:
+
+Customer Management
+Register customers.
+Maintain customer information.
+Store passport details.
+Support VIP customers.
+Track additional services used by guests.
+Room Management
+Maintain Deluxe, Premium, and Suite rooms.
+Track room availability.
+Calculate room prices dynamically.
+Booking Management
+Reserve rooms.
+Prevent double booking.
+Handle cancellations.
+Maintain booking status lifecycle.
+Payment Management
+
+Support multiple payment mechanisms:
+
+UPI
+Credit Card
+Debit Card
+Cash
+Notification Management
+
+Send:
+
+Email notifications
+SMS notifications
+
+for:
+
+Booking confirmation
+Cancellation
+Important announcements
+Staff Management
+
+Manage staff:
+
+Managers
+Receptionists
+File Management
+
+Generate:
+
+Customer folios
+Booking reports
+Serialized backups
+Audit & Recovery
+
+Provide:
+
+Object serialization
+Binary backups
+Random access ledger updates
+Multithreading
+
+Allow multiple customers to book rooms simultaneously.
+
++------------------------+
+| Presentation Layer     |
+| SmartHotelManagementApp|
++-----------+------------+
+            |
+            v
++------------------------+
+| Service Layer          |
+| HotelReservationEngine |
++-----------+------------+
+            |
+            v
++------------------------+
+| DAO Layer              |
+| BookingDAO             |
+| InMemoryBookingDAO     |
++-----------+------------+
+            |
+            v
++------------------------+
+| Storage Layer          |
+| Collections            |
+| Files                  |
+| Serialization          |
++------------------------+
+
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│                                  Presentation Layer                                      │
+│                (CLI Terminal Driver / Simulated Multi-Thread Callables)                  │
+└────────────────────────────────────────────┬─────────────────────────────────────────────┘
+                                             │
+                                             ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│                    Service & Concurrency Layer (HotelReservationEngine)                  │
+│  - Fine-Grained Monitor Locks (synchronized(targetRoom)) to avoid double bookings        │
+│  - Java 8 Streams: Inventory Filtering & Price Ranking via Method References             │
+│  - Wait-Notify Mechanism: cancelBooking() with notifyAll()                               │
+│  - PriorityQueue (VIP Check-In) + Queue (Standard) + Stack (Cancellation Undo)           │
+└──────────────┬─────────────────────────────┼─────────────────────────────┬───────────────┘
+               │                             │                             │
+               ▼                             ▼                             ▼
+┌─────────────────────────────┐┌─────────────────────────────┐┌─────────────────────────────┐
+│      Creational Tier        ││      Behavioral Tier        ││   Persistence & DAO Tier    │
+├─────────────────────────────┤├─────────────────────────────┤├─────────────────────────────┤
+│ - Singleton:                ││ - Strategy:                 ││ - DAO Pattern:              │
+│   HotelConfiguration        ││   PaymentStrategy           ││   InMemoryBookingDAO        │
+│ - Factory Method:           ││   (UPI / Card)              ││ - Character Streams:        │
+│   RoomFactory (Deluxe, etc.)││ - Observer:                 ││   BufferedWriter (Receipts) │
+│ - Builder Pattern:          ││   NotificationObserver      ││ - Byte Streams:             │
+│   BookingBuilder            ││   (Email / SMS)             ││   ObjectOutputStream (ser)  │
+│                             ││                             ││ - Direct Access I/O:        │
+│                             ││                             ││   RandomAccessFile (seek)   │
+└─────────────────────────────┘└─────────────────────────────┘└─────────────────────────────┘
+
+src/
+└── com/
+    └── hotel/
+        └── shmrs/
+            ├── model/
+            │   ├── enums/
+            │   │   ├── RoomType.java
+            │   │   ├── BookingStatus.java
+            │   │   └── PaymentMode.java
+            │   └── entity/
+            │       ├── Passport.java
+            │       ├── HotelService.java
+            │       ├── Customer.java
+            │       ├── Employee.java
+            │       ├── Manager.java
+            │       ├── Receptionist.java
+            │       ├── Room.java
+            │       ├── DeluxeRoom.java
+            │       ├── PremiumRoom.java
+            │       ├── SuiteRoom.java
+            │       └── Booking.java
+            ├── exceptions/
+            │   ├── RoomNotAvailableException.java
+            │   ├── InvalidPaymentException.java
+            │   └── HotelStorageException.java
+            ├── strategy/
+            │   ├── PaymentStrategy.java
+            │   ├── UPIPaymentStrategy.java
+            │   └── CardPaymentStrategy.java
+            ├── observer/
+            │   ├── NotificationObserver.java
+            │   ├── EmailNotification.java
+            │   └── SMSNotification.java
+            ├── factory/
+            │   └── RoomFactory.java
+            ├── builder/
+            │   └── BookingBuilder.java
+            ├── dao/
+            │   ├── BookingDAO.java
+            │   └── InMemoryBookingDAO.java
+            ├── config/
+            │   └── HotelConfiguration.java
+            ├── filehandling/
+            │   └── HotelFileManager.java
+            ├── service/
+            │   └── HotelReservationEngine.java
+            └── main/
+                └── SmartHotelManagementApp.java
